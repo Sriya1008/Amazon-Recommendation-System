@@ -16,8 +16,8 @@ data = parse('All_Beauty_5.json.gz')
 print(data)
 type(data)
 
-for obj in data:
-    print(obj)
+# for obj in data:
+#     print(obj)
 
 
 ### Read in data to pandas dataframe
@@ -30,6 +30,12 @@ def getDF(path):
   return pd.DataFrame.from_dict(df, orient='index')
 
 df = getDF('All_Beauty_5.json.gz')
-
+print(df)
 df.dtypes
 # print(df.dtypes)
+
+#mac problems
+with open('All_Beauty_5.json', 'r') as f:
+  for line in f:
+    review = json.loads(line.strip())
+    print(review)
