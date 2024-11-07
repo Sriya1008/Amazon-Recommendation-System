@@ -1,4 +1,4 @@
-# https://github.com/Sriya1008/IntroToDataScienceProject
+# https://github.com/Sriya1008/project.git
 
 
 import numpy as np
@@ -41,7 +41,27 @@ print(df.isnull().sum())
 with open('All_Beauty_5.json', 'r') as f:
   for line in f:
     review = json.loads(line.strip())
-    print(review)
+    #print(review)
+
+def parcemac(path):
+  with open(path, 'r') as f:
+    for line in f:
+      # review = json.loads(line.strip())
+      # print(review)
+      # return review
+      yield json.loads(line)
+      
+def getDFmac(path):
+  i = 0
+  df = {}
+  for d in parcemac(path):
+    df[i] = d
+    i += 1
+  return pd.DataFrame.from_dict(df, orient='index')
+
+dfmac = getDFmac('All_Beauty_5.json')
+print(dfmac.dtypes)
+print("dfmac shape:", dfmac.shape)
 
 
 #### Splitting the data 
@@ -51,18 +71,3 @@ train, test = train_test_split(
 print("df shape:", df.shape)
 print("train shape:", train.shape)
 print("test shape:", test.shape)
-
-
-
-# dicMac = {}
-# i = 0
-# with open('All_Beauty_5.json', 'r') as f:
-#   for line in f:
-#     review = json.loads(line.strip())
-#     dicMac[i] = line
-#     i += 1
-#     # print(review)
-# dfmac = pd.DataFrame.from_dict(dicMac, orient='index')
-# print(type(dfmac))
-# print("dfmac shape:", dfmac.shape)
-
