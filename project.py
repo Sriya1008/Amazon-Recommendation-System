@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import cosine_similarity
+import sys
 
 ### Read in data
 def parse(path):
@@ -62,7 +63,7 @@ print("dfmac shape:", dfmac.shape)
 
 
 ######################################################################
-### Creating the user-item matrix as numpy array:
+### Creating the user-item matrix as pandas dataframe:
 
 #Using item-based filtering
 
@@ -85,7 +86,7 @@ print("test shape:", test.shape)
 
 ######################################################
 
-# #Finding Cosine Similarity between items in training dataset
+# #Finding Cosine Similarity between items in training dataset as a numpy array
 item_similarity_matrix = cosine_similarity(train.T)
 
 pd.set_option('display.max_columns', None)
@@ -93,13 +94,22 @@ pd.set_option('display.max_rows', None)
   
 print("item_similarity_matrix shape:", item_similarity_matrix.shape)
 # print("Item-Item Cosine Similarity Matrix:\n", item_similarity_matrix)
-print("Item-Item Cosine Similarity Matrix First 10 Rows:\n", item_similarity_matrix[:10]) #Prints first 10 rows of the matrix
+print("Item-Item Cosine Similarity Matrix 0:10 Rows:\n", item_similarity_matrix[:10]) #Prints first 10 rows of the matrix
+print("Item-Item Cosine Similarity Matrix 10:20 Rows:\n", item_similarity_matrix[10:20])
+print("Item-Item Cosine Similarity Matrix 20:20 Rows:\n", item_similarity_matrix[20:30])
+print("Item-Item Cosine Similarity Matrix 30:40 Rows:\n", item_similarity_matrix[30:40])
+print("Item-Item Cosine Similarity Matrix 40:50 Rows:\n", item_similarity_matrix[40:50])
+print("Item-Item Cosine Similarity Matrix 50:60 Rows:\n", item_similarity_matrix[50:60])
+print("Item-Item Cosine Similarity Matrix 60:70 Rows:\n", item_similarity_matrix[60:70])
+print("Item-Item Cosine Similarity Matrix 70:80 Rows:\n", item_similarity_matrix[70:80])
+print("Item-Item Cosine Similarity Matrix 80:85 Rows:\n", item_similarity_matrix[80:85])
+np.set_printoptions(threshold=sys.maxsize)
+np.set_printoptions(threshold=np.inf)
+print(sys.maxsize)
+item_similarity_matrix.view()
 
 print(item_similarity_matrix[1,1])
-print(item_similarity_matrix[1,6])
+print(item_similarity_matrix[1,6]) 
 
 # print(train.sum(axis=0))  # Sum of ratings per item
 # print(train.sum(axis=1))  # Sum of ratings per user
-
-
-

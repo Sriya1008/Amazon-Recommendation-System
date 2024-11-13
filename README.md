@@ -1,5 +1,8 @@
-IntroToDataScienceProject
+https://github.com/Sriya1008/Amazon-Recommendation-System.git
+https://towardsdatascience.com/comprehensive-guide-on-item-based-recommendation-systems-d67e40e2b75d
 
+
+In the data set, the variables mean: 
 reviewerID - ID of the reviewer, e.g. A2SUAM1J3GNN3B                                  Object
 asin - ID of the product, e.g. 0000013714                                             Object
 reviewerName - name of the reviewer                                                   Object
@@ -13,6 +16,8 @@ reviewTime - time of the review (raw)                                           
 image - images that users post after they have received the product                   Object
 verified                                                                              bool
 
+
+------------------------------------------------------------------------------------------------------
 pip install simplejson
 pip install -U scikit-learn
 
