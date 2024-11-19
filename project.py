@@ -3,6 +3,7 @@ import json
 import gzip
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import cosine_similarity
 import sys
@@ -14,8 +15,8 @@ def parse(path):
     yield json.loads(l)
     
 data = parse('All_Beauty_5.json.gz')
-print(data)
-type(data)
+# print(data)
+# type(data)
 
 # for obj in data:
 #     print(obj)
@@ -30,9 +31,9 @@ def getDF(path):
   return pd.DataFrame.from_dict(df, orient='index')
 
 df = getDF('All_Beauty_5.json.gz')
-print(df.dtypes)
-df.dtypes
-print(df.isnull().sum())
+# print(df.dtypes)
+# df.dtypes
+# print(df.isnull().sum())
 # print(df.dtypes)
 
 #mac problems
@@ -65,7 +66,7 @@ print("dfmac shape:", dfmac.shape)
 ######################################################################
 ### Creating the user-item matrix as pandas dataframe:
 
-#Using item-based filtering
+#Using user-based filtering
 
 # Group by reviewerID and asin, taking the mean rating for duplicates
 df = df.groupby(['reviewerID', 'asin'], as_index=False).agg({'overall': 'mean'})
@@ -75,14 +76,52 @@ user_item_matrix = df.pivot(index='reviewerID', columns='asin', values='overall'
 user_item_matrix = user_item_matrix.fillna(0) # Make all NaN values 0
 print("Sample of User-Item Matrix:\n", user_item_matrix.head())
 
-#### Splitting the data for train and test
+#### Splitting the data for train and test###########################################
 
-train, test = train_test_split(
-    user_item_matrix, test_size=0.2, random_state=0)
+# Function for per-user train-test split
+def user_based_train_test_split(user_item_matrix, test_size=0.2):
+    """
+    Splits the user-item matrix into training and testing datasets, ensuring
+    an 80-20 split of ratings per user.
 
-print("df shape:", user_item_matrix.shape)
-print("train shape:", train.shape)
-print("test shape:", test.shape)
+    Parameters:
+    - user_item_matrix: pandas.DataFrame, the user-item matrix.
+    - test_size: float, the proportion of ratings to use for testing.
+
+    Returns:
+    - train: pandas.DataFrame, the training user-item matrix.
+    - test: pandas.DataFrame, the testing user-item matrix.
+    """
+    train = user_item_matrix.copy()
+    test = user_item_matrix.copy()
+
+    for user in user_item_matrix.index:
+        user_ratings = user_item_matrix.loc[user]
+        non_zero_ratings = user_ratings[user_ratings > 0]  # Only consider items the user rated
+        test_indices = non_zero_ratings.sample(frac=test_size, random_state=42).index
+        
+        # Zero out test ratings in the training set
+        train.loc[user, test_indices] = 0
+        
+        # Zero out training ratings in the test set
+        # print(~test.index.isin(test_indices))
+        # print(user)
+        # print(test.loc[user,])
+        # test.loc[user, ~test.index.isin(test_indices)] = 0
+        test.loc[user, ~test.columns.isin(test_indices)] = 0
+
+
+    return train, test
+
+# Apply the per-user train-test split
+train, test = user_based_train_test_split(user_item_matrix)
+
+# Verify the split
+print("Training set shape:", train.shape)
+print("Testing set shape:", test.shape)
+assert (train * test).sum().sum() == 0, "Train and test sets overlap!"
+print("Train and test sets are properly separated.")
+
 
 ######################################################
 
@@ -111,11 +150,11 @@ pd.set_option('display.max_rows', None)
 # print("Item-Item Cosine Similarity Matrix 80:85 Rows:\n", item_similarity_matrix[80:85])
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(threshold=np.inf)
-print(sys.maxsize)
+# print(sys.maxsize)
 item_similarity_matrix.view()
 
-print(item_similarity_matrix[1,1])
-print(item_similarity_matrix[1,6]) 
+# print(item_similarity_matrix[1,1])
+# print(item_similarity_matrix[1,6]) 
 
 # print(train.sum(axis=0))  # Sum of ratings per item
 # print(train.sum(axis=1))  # Sum of ratings per user
@@ -130,75 +169,19 @@ user_similarity_matrix_pd = pd.DataFrame(user_similarity_matrix)
 print(user_similarity_matrix_pd.head())
 print("user_similarity_matrix shape:", user_similarity_matrix_pd.shape)
 
-print(type(user_similarity_matrix))
+# print(type(user_similarity_matrix))
 
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(threshold=np.inf)
-print(sys.maxsize)
-user_similarity_matrix.view()
+# print(sys.maxsize)
+# user_similarity_matrix.view()
 
-print(user_similarity_matrix[1,1])
-print(user_similarity_matrix[1,6])
+# print(user_similarity_matrix[1,1])
+# print(user_similarity_matrix[1,6])
 
 
 ###############################################################
-### Recomendation Score Matrix
 
-# train = pd.DataFrame(train)
-
-# # Function to calculate the recommendation score for an item
-# def cal_score(history, similarities, avg_rating):
-#     return np.sum((history - avg_rating) * similarities) / np.sum(similarities)
-
-# # Initialize an empty DataFrame for user-item scores
-# #data_ibs_user_score = pd.DataFrame(index=train.index, columns=train.columns)
-# data_ibs_user_score = pd.DataFrame(data=train)
-# print("[0,0]", data_ibs_user_score.iloc[0, 0])
-
-# print(train.shape)
-# print(user_similarity_matrix_pd.shape)
-
-# print("iloc = ", train.iloc[1,0])
-
-# train = train.iloc[:, 1:]
-
-# # Iterate through users (rows)
-# for i, user_row in train.iterrows():
-#     # Get user's ratings
-#     ratings = user_row[1:].to_numpy()  # Exclude user ID column
-#     mean_avg = np.mean(ratings[ratings != 0])  # Average of non-zero ratings
-    
-#     # Store user ID in the score DataFrame
-#     # data_ibs_user_score.iloc[i, 0] = user_row[0]  # User ID in the first column
-#     print(i)
-#     data_ibs_user_score.iloc[i, 0] = user_row.iloc[0]
-    
-#     # Iterate through items (columns)
-#     for j, item in enumerate(train.columns[1:], start=1):  # Skip user ID column
-#         # Check if the user has rated the item
-#         if user_row[item] > 0:
-#             # Already rated, assign -1
-#             data_ibs_user_score.iloc[i, j] = -1
-#         else:
-#             # Get the top 10 similar items
-#             top_n = user_similarity_matrix_pd[item].sort_values(ascending=False).iloc[1:11]
-#             top_n_names = top_n.index
-#             top_n_similarities = top_n.to_numpy()
-            
-#             # Get the user's rating history for the top N items
-#             top_n_user_purchases = user_row[top_n_names].to_numpy()
-            
-#             # Calculate average ratings for the top N items
-#             item_rating_avg = data_ibs[top_n_names].mean(axis=0).to_numpy()
-            
-#             # Compute the recommendation score
-#             score = mean_avg + cal_score(top_n_user_purchases, top_n_similarities, item_rating_avg)
-#             data_ibs_user_score.iloc[i, j] = score
-
-# # View scores of each item for users
-# print(data_ibs_user_score)
-
-###############################################
 def predict_ratings_user_based(user_item_matrix, user_similarity_matrix, user_means):
     """
     Predict ratings using user-based collaborative filtering.
@@ -234,152 +217,146 @@ normalized_matrix = train.subtract(user_means, axis=0).fillna(0)
 # Predict ratings for the user-item matrix
 predicted_ratings_user_based = predict_ratings_user_based(train, user_similarity_matrix, user_means)
 
+print("len", len(predicted_ratings_user_based))
+
+predicted_ratings_user_based_1_5 = predicted_ratings_user_based.copy()
+
+for i in range (len(predicted_ratings_user_based)):
+  for j in range (len(predicted_ratings_user_based.iloc[0])):
+    if predicted_ratings_user_based.iat[i,j] < 0.2:
+      predicted_ratings_user_based_1_5.iat[i,j] = 1
+    elif predicted_ratings_user_based.iat[i,j] < 0.4:
+      predicted_ratings_user_based_1_5.iat[i,j] = 2
+    elif predicted_ratings_user_based.iat[i,j] < 0.6:
+      predicted_ratings_user_based_1_5.iat[i,j] = 3
+    elif predicted_ratings_user_based.iat[i,j] < 0.8:
+      predicted_ratings_user_based_1_5.iat[i,j] = 4
+    else:
+      predicted_ratings_user_based_1_5.iat[i,j] = 5
+    
+# print(predicted_ratings_user_based_1_5.head())  
+
+
 print("Predicted Ratings Matrix (User-Based):\n", predicted_ratings_user_based.head())
 
 ### Generate Recommendations
-def recommend_items_user_based(user_id, user_item_matrix, predicted_ratings, top_n=10):
+def recommend_items_for_all_users(user_item_matrix, predicted_ratings, top_n=10):
     """
-    Recommend top N items for a user based on predicted ratings (user-based filtering).
+    Generate recommendations for all users based on predicted ratings.
     Args:
-        user_id (str): The ID of the user.
         user_item_matrix (pd.DataFrame): Original user-item ratings matrix.
         predicted_ratings (pd.DataFrame): Predicted ratings matrix.
-        top_n (int): Number of recommendations to return.
+        top_n (int): Number of recommendations to return per user.
     Returns:
-        list: Top N recommended item IDs.
+        dict: Dictionary with user IDs as keys and top N recommended item IDs as values.
     """
-    # Get items the user has already rated
-    user_ratings = user_item_matrix.loc[user_id]
-    rated_items = user_ratings[user_ratings > 0].index
+    recommendations = {}
+    for user_id in user_item_matrix.index:
+        # Get items the user has already rated
+        user_ratings = user_item_matrix.loc[user_id]
+        rated_items = user_ratings[user_ratings > 0].index
 
-    # Get predicted ratings for the user
-    user_predictions = predicted_ratings.loc[user_id]
+        # Get predicted ratings for the user
+        user_predictions = predicted_ratings.loc[user_id]
 
-    # Filter out already rated items
-    recommendations = user_predictions.drop(index=rated_items)
+        # Filter out already rated items
+        filtered_predictions = user_predictions.drop(index=rated_items)
 
-    # Sort by predicted rating and return top N items
-    top_items = recommendations.sort_values(ascending=False).head(top_n).index.tolist()
-    return top_items
+        # Sort by predicted rating and get top N items
+        top_items = filtered_predictions.sort_values(ascending=False).head(top_n).index.tolist()
+        recommendations[user_id] = top_items
 
-user_id = train.index[0]  # Replace with an actual user ID from your dataset
-recommendations_user_based = recommend_items_user_based(user_id, train, predicted_ratings_user_based, top_n=10)
+    return recommendations
+
+# Generate and print recommendations for all users
+all_user_recommendations = recommend_items_for_all_users(train, predicted_ratings_user_based, top_n=10)
+
+# Print recommendations for each user
+# for user, recommendations in all_user_recommendations.items():
+#     print(f"Recommendations for user {user}:\n{recommendations}")
+
+
+################################################################################################
+#MAE and RMSE
+# Flatten test and predicted matrices for comparison
+test_values = test[test > 0].stack()  # Only consider non-zero ratings in the test set
+predicted_values = predicted_ratings_user_based_1_5[test > 0].stack()
+
+
+# print("Predicted Values Head:", predicted_values.head(10))
+# print("Test Values Head:",test_values.head(10))
+
+# Calculate MAE and RMSE
+mae = mean_absolute_error(test_values, predicted_values)
+rmse = np.sqrt(mean_squared_error(test_values, predicted_values))
+
+print(f"MAE: {mae}")
+print(f"RMSE: {rmse}")  
+
+
+# Function to calculate Precision, Recall, and F-measure for all users
+def evaluate_recommendations(user_item_matrix, top_n_recommendations, test_data):
+    precision_scores = []
+    recall_scores = []
+    f_measure_scores = []
+    ndcg_scores = []
+
+    # Iterate over all users
+    for user_id in user_item_matrix.index:
+        # Get the user's test set (items they haven't rated in the training set)
+        user_test_items = test_data.loc[user_id][test_data.loc[user_id] > 0].index.tolist()
+        
+        # Get the top-n recommendations for this user
+        recommended_items = top_n_recommendations.get(user_id, [])
+        
+        # Calculate Precision: Number of recommended items that are in the test set
+        relevant_recommended = len(set(recommended_items) & set(user_test_items))
+        precision = relevant_recommended / len(recommended_items) if recommended_items else 0
+        
+        # Calculate Recall: Number of recommended test items out of all test items
+        recall = relevant_recommended / len(user_test_items) if user_test_items else 0
+        
+        # Calculate F-measure
+        if precision + recall > 0:
+            f_measure = 2 * precision * recall / (precision + recall)
+        else:
+            f_measure = 0
+
+        # Calculate NDCG: Discounted Cumulative Gain at k (top N)
+        dcg = 0
+        idcg = 0
+        for i, item in enumerate(recommended_items[:len(user_test_items)]):
+            if item in user_test_items:
+                dcg += 1 / np.log2(i + 2)  # i + 2 for 1-based index
+            idcg += 1 / np.log2(i + 2)  # ideal DCG assumes all test items are relevant and in perfect order
+        
+        ndcg = dcg / idcg if idcg > 0 else 0
+        
+        # Store the results for this user
+        precision_scores.append(precision)
+        recall_scores.append(recall)
+        f_measure_scores.append(f_measure)
+        ndcg_scores.append(ndcg)
+
+    # Calculate the average of all users' metrics
+    avg_precision = np.mean(precision_scores)
+    avg_recall = np.mean(recall_scores)
+    avg_f_measure = np.mean(f_measure_scores)
+    avg_ndcg = np.mean(ndcg_scores)
+
+    return avg_precision, avg_recall, avg_f_measure, avg_ndcg
+
+
+# Evaluate the recommendation system
+avg_precision, avg_recall, avg_f_measure, avg_ndcg = evaluate_recommendations(
+    user_item_matrix, all_user_recommendations, test)
+
+# Print the evaluation metrics
+print(f"Average Precision: {avg_precision}")
+print(f"Average Recall: {avg_recall}")
+print(f"Average F-measure: {avg_f_measure}")
+print(f"Average NDCG: {avg_ndcg}")
+
+  
  
-print(f"Top recommendations for user {user_id}:\n", recommendations_user_based)
- 
-###############################################################################################################################
 
-# import numpy as np
-# import pandas as pd
-# from sklearn.metrics.pairwise import cosine_similarity
-
-# # Input data (assume it's a pandas DataFrame named `data`)
-# # Columns: ["User", "Item1", "Item2", ..., "ItemN"]
-# # Non-rated items have a value of 0.
-
-# data = pd.DataFrame(user_item_matrix)
-# print(data.head())
-# print(data.shape)
-# print(type(data))
-
-# # print("iloc", data.iloc[1, 1:])
-
-# # Normalize user ratings
-# def normalize_ratings(data):
-#     data_normalized = data.copy()
-#     for i, row in data.iterrows():
-#         ratings = row[1:]  # Exclude "User" column
-#         avg_rating = ratings[ratings != 0].mean()  # Average of non-zero ratings
-
-#         # Normalize ratings for the row
-#         normalized_ratings = [r - avg_rating if r != 0 else 0 for r in ratings]
-
-#         # Assign normalized ratings back to the corresponding row
-#         print("i = ", i)
-#         data_normalized.iloc[i, 1:] = normalized_ratings
-
-#     return data_normalized
-
-# data_normalized = normalize_ratings(data)
-
-# # Prepare data frames for similarity calculations
-# data_ibs = data.iloc[:, 1:]  # Exclude user column
-# data_normalized_ibs = data_normalized.iloc[:, 1:]  # Exclude user column
-
-# # Replace 0 with NaN in original data
-# data_ibs = data_ibs.replace(0, np.nan)
-
-# # Compute item-item cosine similarity
-# def calculate_similarity(data):
-#     similarity = cosine_similarity(data.T, data.T)  # Transpose for item-based similarity
-#     similarity_df = pd.DataFrame(
-#         similarity, index=data.columns, columns=data.columns
-#     )
-#     return similarity_df
-
-# data_ibs_similarity = calculate_similarity(data_normalized_ibs)
-
-# # Compute scores for item recommendations
-# def calculate_scores(data_ibs, data_ibs_similarity, data):
-#     data_ibs_user_score = pd.DataFrame(index=data.index, columns=data.columns)
-#     for i, user_row in data.iterrows():
-#         user_id = user_row["User"]
-#         ratings = user_row[1:]  # Skip the "User" column
-#         avg_rating = ratings[ratings != 0].mean()
-
-#         data_ibs_user_score.loc[i, "User"] = user_id
-
-#         for item in data.columns[1:]:
-#             if user_row[item] > 0:
-#                 # Already rated, assign -1
-#                 data_ibs_user_score.loc[i, item] = -1
-#             else:
-#                 # Get top 10 similar items
-#                 top_n = (
-#                     data_ibs_similarity[item]
-#                     .sort_values(ascending=False)
-#                     .iloc[1:11]  # Skip self-similarity
-#                 )
-#                 top_n_items = top_n.index
-#                 top_n_similarities = top_n.values
-
-#                 # User's ratings for top N items
-#                 top_n_user_ratings = user_row[top_n_items]
-
-#                 # Average ratings for top N items
-#                 item_avg_ratings = data_ibs[top_n_items].mean()
-
-#                 # Calculate score
-#                 numerator = np.sum(
-#                     (top_n_user_ratings - item_avg_ratings) * top_n_similarities
-#                 )
-#                 denominator = np.sum(top_n_similarities)
-#                 score = avg_rating + (numerator / denominator if denominator != 0 else 0)
-#                 data_ibs_user_score.loc[i, item] = score
-#     return data_ibs_user_score
-
-# data_ibs_user_score = calculate_scores(data_ibs, data_ibs_similarity, data)
-
-# # Generate top 100 recommended items for each user
-# def generate_recommendations(data_ibs_user_score):
-#     recommendations = pd.DataFrame(
-#         index=data_ibs_user_score.index,
-#         columns=["User"] + [f"Item{i}" for i in range(1, 101)],
-#     )
-#     for i, user_row in data_ibs_user_score.iterrows():
-#         user_id = user_row["User"]
-#         recommendations.loc[i, "User"] = user_id
-#         # Sort items by score, exclude already rated items (-1)
-#         sorted_items = (
-#             user_row[1:]  # Skip "User" column
-#             .sort_values(ascending=False)
-#             .iloc[:100]
-#             .index
-#         )
-#         recommendations.loc[i, 1:] = sorted_items
-#     return recommendations
-
-# data_user_scores_holder = generate_recommendations(data_ibs_user_score)
-
-# # View the final recommendations
-# print(data_user_scores_holder)
