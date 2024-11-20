@@ -358,5 +358,5 @@ print(f"Average F-measure: {avg_f_measure}")
 print(f"Average NDCG: {avg_ndcg}")
 
   
- 
+print(user_item_matrix.head())
 
