@@ -269,7 +269,7 @@ def recommend_items_for_all_users(user_item_matrix, predicted_ratings, top_n=10)
     return recommendations
 
 # Generate and print recommendations for all users
-all_user_recommendations = recommend_items_for_all_users(train, predicted_ratings_user_based, top_n=10)
+all_user_recommendations = recommend_items_for_all_users(train, predicted_ratings_user_based_1_5, top_n=10)
 
 # Print recommendations for each user
 # for user, recommendations in all_user_recommendations.items():
