@@ -74,7 +74,24 @@ df = df.groupby(['reviewerID', 'asin'], as_index=False).agg({'overall': 'mean'})
 # Now pivot to create the user-item matrix
 user_item_matrix = df.pivot(index='reviewerID', columns='asin', values='overall')
 user_item_matrix = user_item_matrix.fillna(0) # Make all NaN values 0
-print("Sample of User-Item Matrix:\n", user_item_matrix.head())
+# # Print user-item matrix to confirm
+# print("User-Item Matrix:\n", user_item_matrix)
+
+# Convert user_item_matrix to JSON
+user_item_matrix_json = user_item_matrix.to_json(orient='index')
+
+# Prepare the final JSON object
+user_item_matrix_data = {
+    "user_item_matrix": json.loads(user_item_matrix_json)  # Convert JSON string to dictionary
+}
+
+# Save to a separate JSON file
+output_file_user_item_matrix = "user_item_matrix.json"
+with open(output_file_user_item_matrix, "w") as f:
+    json.dump(user_item_matrix_data, f, indent=4)  # Pretty-print with indentation
+
+print(f"User-item matrix saved to {output_file_user_item_matrix}")
+
 
 #### Splitting the data for train and test###########################################
 
@@ -125,49 +142,72 @@ print("Train and test sets are properly separated.")
 
 ######################################################
 
-### Item Similarity Matrix
+# ### Item Similarity Matrix
 
-# #Finding Cosine Similarity between items in training dataset as a numpy array
-item_similarity_matrix = cosine_similarity(train.T)
+# # #Finding Cosine Similarity between items in training dataset as a numpy array
+# item_similarity_matrix = cosine_similarity(train.T)
 
-item_similarity_matrix_pd = pd.DataFrame(item_similarity_matrix)
-print(item_similarity_matrix_pd.head())
-print("item_similarity_matrix_pd shape:", item_similarity_matrix_pd.shape)
+# item_similarity_matrix_pd = pd.DataFrame(item_similarity_matrix)
+# print(item_similarity_matrix_pd.head())
+# print("item_similarity_matrix_pd shape:", item_similarity_matrix_pd.shape)
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_rows', None)
   
-# print("item_similarity_matrix shape:", item_similarity_matrix.shape)
-# # print("Item-Item Cosine Similarity Matrix:\n", item_similarity_matrix)
-# print("Item-Item Cosine Similarity Matrix 0:10 Rows:\n", item_similarity_matrix[1:2]) #Prints first 10 rows of the matrix
-# print("Item-Item Cosine Similarity Matrix 10:20 Rows:\n", item_similarity_matrix[10:20])
-# print("Item-Item Cosine Similarity Matrix 20:20 Rows:\n", item_similarity_matrix[20:30])
-# print("Item-Item Cosine Similarity Matrix 30:40 Rows:\n", item_similarity_matrix[30:40])
-# print("Item-Item Cosine Similarity Matrix 40:50 Rows:\n", item_similarity_matrix[40:50])
-# print("Item-Item Cosine Similarity Matrix 50:60 Rows:\n", item_similarity_matrix[50:60])
-# print("Item-Item Cosine Similarity Matrix 60:70 Rows:\n", item_similarity_matrix[60:70])
-# print("Item-Item Cosine Similarity Matrix 70:80 Rows:\n", item_similarity_matrix[70:80])
-# print("Item-Item Cosine Similarity Matrix 80:85 Rows:\n", item_similarity_matrix[80:85])
-np.set_printoptions(threshold=sys.maxsize)
-np.set_printoptions(threshold=np.inf)
-# print(sys.maxsize)
-item_similarity_matrix.view()
+# # print("item_similarity_matrix shape:", item_similarity_matrix.shape)
+# # # print("Item-Item Cosine Similarity Matrix:\n", item_similarity_matrix)
+# # print("Item-Item Cosine Similarity Matrix 0:10 Rows:\n", item_similarity_matrix[1:2]) #Prints first 10 rows of the matrix
+# # print("Item-Item Cosine Similarity Matrix 10:20 Rows:\n", item_similarity_matrix[10:20])
+# # print("Item-Item Cosine Similarity Matrix 20:20 Rows:\n", item_similarity_matrix[20:30])
+# # print("Item-Item Cosine Similarity Matrix 30:40 Rows:\n", item_similarity_matrix[30:40])
+# # print("Item-Item Cosine Similarity Matrix 40:50 Rows:\n", item_similarity_matrix[40:50])
+# # print("Item-Item Cosine Similarity Matrix 50:60 Rows:\n", item_similarity_matrix[50:60])
+# # print("Item-Item Cosine Similarity Matrix 60:70 Rows:\n", item_similarity_matrix[60:70])
+# # print("Item-Item Cosine Similarity Matrix 70:80 Rows:\n", item_similarity_matrix[70:80])
+# # print("Item-Item Cosine Similarity Matrix 80:85 Rows:\n", item_similarity_matrix[80:85])
+# np.set_printoptions(threshold=sys.maxsize)
+# np.set_printoptions(threshold=np.inf)
+# # print(sys.maxsize)
+# item_similarity_matrix.view()
 
-# print(item_similarity_matrix[1,1])
-# print(item_similarity_matrix[1,6]) 
+# # print(item_similarity_matrix[1,1])
+# # print(item_similarity_matrix[1,6]) 
 
-# print(train.sum(axis=0))  # Sum of ratings per item
-# print(train.sum(axis=1))  # Sum of ratings per user
+# # print(train.sum(axis=0))  # Sum of ratings per item
+# # print(train.sum(axis=1))  # Sum of ratings per user
 
 ##############################################
-### Item Similarity Matrix
+### User Similarity Matrix
 
 # #Finding Cosine Similarity between items in training dataset as a numpy array
 user_similarity_matrix = cosine_similarity(train)
 
+# Convert user_similarity_matrix to a DataFrame
 user_similarity_matrix_pd = pd.DataFrame(user_similarity_matrix)
-print(user_similarity_matrix_pd.head())
-print("user_similarity_matrix shape:", user_similarity_matrix_pd.shape)
+
+# Get the shape of the matrix
+user_similarity_matrix_shape = user_similarity_matrix_pd.shape
+
+# # Print to confirm content
+# print(user_similarity_matrix_pd.head())
+# print("user_similarity_matrix shape:", user_similarity_matrix_shape)
+
+# Convert the DataFrame to JSON
+user_similarity_matrix_json = user_similarity_matrix_pd.to_json(orient='index')
+
+# Prepare the final JSON object
+similarity_output_data = {
+    "shape": user_similarity_matrix_shape,
+    "user_similarity_matrix": json.loads(user_similarity_matrix_json)  # Convert JSON string to dictionary
+}
+
+# Save to a separate JSON file
+output_file_similarity = "user_similarity_matrix.json"
+with open(output_file_similarity, "w") as f:
+    json.dump(similarity_output_data, f, indent=4)  # Pretty-print with indentation
+
+print(f"User similarity matrix and its shape saved to {output_file_similarity}")
+
 
 # print(type(user_similarity_matrix))
 
@@ -217,7 +257,7 @@ normalized_matrix = train.subtract(user_means, axis=0).fillna(0)
 # Predict ratings for the user-item matrix
 predicted_ratings_user_based = predict_ratings_user_based(train, user_similarity_matrix, user_means)
 
-print("len", len(predicted_ratings_user_based))
+
 
 predicted_ratings_user_based_1_5 = predicted_ratings_user_based.copy()
 
@@ -235,9 +275,21 @@ for i in range (len(predicted_ratings_user_based)):
       predicted_ratings_user_based_1_5.iat[i,j] = 5
     
 # print(predicted_ratings_user_based_1_5.head())  
+predicted_ratings_length = len(predicted_ratings_user_based)
 
+predicted_ratings_json = predicted_ratings_user_based.to_json(orient='index')
 
-print("Predicted Ratings Matrix (User-Based):\n", predicted_ratings_user_based.head())
+output_data = {
+    "length": predicted_ratings_length,
+    "predicted_ratings": json.loads(predicted_ratings_json)  # Convert JSON string to a dictionary
+}
+
+# Save the combined data to a JSON file
+output_file = "predicted_ratings_user_based.json"
+with open(output_file, "w") as f:
+    json.dump(output_data, f, indent=4)  # Pretty-print with indentation
+
+print(f"Predicted ratings matrix and length saved to {output_file}")
 
 ### Generate Recommendations
 def recommend_items_for_all_users(user_item_matrix, predicted_ratings, top_n=10):
